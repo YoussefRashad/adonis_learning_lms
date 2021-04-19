@@ -59,6 +59,22 @@ Route.group(() => {
   Route.delete("/:id", "TeachersController.deleteTeacher");
 }).prefix("/api/user/teacher/:teacherId/courses");
 
+Route.group(() => {
+  Route.get("/", "LessonsController.getClassroomLessons");
+  Route.get("/:id", "LessonsController.getClassroomLesson");
+  Route.post("/", "LessonsController.addClassroomLesson");
+  Route.patch("/:id", "LessonsController.editClassroomLesson");
+  Route.delete("/:id", "LessonsController.deleteClassroomLesson");
+}).prefix("/api/user/teacher/:classroomId/lessons");
+
+Route.group(() => {
+  Route.get("/", "LessonsController.getCourseLessons");
+  Route.get("/:id", "LessonsController.getCourseLesson");
+  Route.post("/", "LessonsController.addCourseLesson");
+  Route.patch("/:id", "LessonsController.editCourseLesson");
+  Route.delete("/:id", "LessonsController.deleteCourseLesson");
+}).prefix("/api/user/teacher/:courseId/lessons");
+
 
 
 // // to check on the connection of the DB
