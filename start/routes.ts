@@ -25,7 +25,7 @@ import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 Route.get('/', async () => {
   return { hello: 'world' }
 })
-
+// knes
 Route.group(()=>{
   Route.get("/", "StudentsController.getStudents");
   Route.get("/:id", "StudentsController.getStudent");
@@ -75,6 +75,21 @@ Route.group(() => {
   Route.delete("/:id", "LessonsController.deleteCourseLesson");
 }).prefix("/api/user/teacher/:courseId/lessons");
 
+Route.group(() => {
+  Route.get("/", "VideosController.getVideos");
+  Route.get("/:id", "VideosController.getVideo");
+  Route.post("/", "VideosController.addVideo");
+  Route.patch("/:id", "VideosController.editVideo");
+  Route.delete("/:id", "VideosController.deleteVideo");
+}).prefix("/api/user/teacher/:lessonId/material/videos");
+
+Route.group(() => {
+  Route.get("/", "AssessmentsController.getAssessments");
+  Route.get("/:id", "AssessmentsController.getAssessment");
+  Route.post("/", "AssessmentsController.addAssessment");
+  Route.patch("/:id", "AssessmentsController.editAssessment");
+  Route.delete("/:id", "AssessmentsController.deleteAssessment");
+}).prefix("/api/user/teacher/:lessonId/material/assessment");
 
 
 // // to check on the connection of the DB

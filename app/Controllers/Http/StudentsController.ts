@@ -1,12 +1,12 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Student from 'App/Models/Student';
-import Database from '@ioc:Adonis/Lucid/Database';
 import User from 'App/Models/User';
 
 export default class StudentsController {
-    getStudents = async ({ response }: HttpContextContract)=>{
+    getStudents = async ({ response, request }: HttpContextContract)=>{
         try {
-            const students = await Student.all()
+            const { page, limit } = request.get();
+            const students = await Student.query().paginate(page, limit)            
             return response.send(students)
         } catch (error) {
             return response.status(500).send({error: error.message});
@@ -91,7 +91,7 @@ export default class StudentsController {
             if(!user){
                 return response.status(404).send("id is wrong");
             }
-            await user?.delete()
+            await user.delete()
             return response.send("deleted");
         } catch (error) {
             return response.status(500).send({ error: error.message });

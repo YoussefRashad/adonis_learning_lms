@@ -8,6 +8,7 @@ export default class Lessons extends BaseSchema {
       table.increments('id')
       table.timestamps(true)
       table.string("description");
+      table.string("price");
       // i will use preloading not relations
       table.integer("classroom_id");
       table.integer("course_id");
