@@ -1,28 +1,18 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import User from 'App/Models/User';
-import Teacher from './../../Models/Teacher';
+import Teacher from 'App/Models/Teacher';
+import { getModel, createModel, updateModel, deleteModel } from 'App/Service/CRUD_Models'
 
 export default class TeachersController {
     getTeachers = async ({ response }: HttpContextContract)=>{
-        try {
-            const teachers = await Teacher.all()
-            return response.send(teachers)
-        } catch (error) {
-            return response.status(500).send({error: error.message});
-        }
+        const teachers = await Teacher.all()
+        return response.send(teachers)
     }
 
     getTeacher = async ({ request, response }: HttpContextContract)=>{
-        const { id } = request.params()
-        try {
-            const teacher = await Teacher.find(id)
-            if(!teacher){
-                return response.status(404).send('not found')
-            }
-            return response.send(teacher)
-        } catch (error) {
-            return response.status(500).send({error: error.message});
-        }
+        const { id } = request.params();
+        const teacher = getModel(Teacher, "id", id);
+        return response.send(teacher);
     }
 
     addTeacher = async ({ request, response }: HttpContextContract)=>{
@@ -33,65 +23,32 @@ export default class TeachersController {
             university,
             grad_year
         } = request.requestBody
-
-        try {
-            const user = new User()
-            user.email = email
-            user.password = password
-            user.username = username
-            await user.save()
-            
-            const teacher = new Teacher()
-            teacher.university = university
-            teacher.grad_year = grad_year
-            await teacher.related('user').associate(user)
-            
-            return response.send(teacher)
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        
+        const user = createModel(User, {email, password, username})
+        await user.save()
+        
+        const teacher = createModel(Teacher, { university, grad_year });
+        await teacher.related("user").associate(teacher);
+        
+        return response.send(teacher)
     }
     
     editTeacher = async ({ request, response }: HttpContextContract)=>{
-        const updates = Object.keys(request.requestBody)
-        const allowedUpdates = ['email', 'password', 'username', 'university', 'grad_year']
-        const isValidOperation = updates.every((update)=> allowedUpdates.includes(update))
-        if(!isValidOperation){
-            return response.status(404).send("invalid operation")
-        }
         const { id } = request.params();
+        const user = getModel(User, "id", id);
+        const teacher = getModel(Teacher, "userId", id);
 
-        try {
-            const user = await User.find(id)
-            if(!user){
-                return response.status(404).send("id is wrong");
-            }
-            const teacher = await Teacher.findBy('userId', id)
-            if (!teacher) {
-                return response.status(404).send("id is wrong");
-            }
-
-            let { university, grad_year, ...userObj } = request.requestBody
-            await User.query().where("id", id).update(userObj);
-            await Teacher.query().where("userId", id).update({ university, grad_year })
-            
-            return response.send("updated");
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        let { university, grad_year, ...userObj } = request.requestBody;
+        updateModel(User, "id", id, userObj);
+        updateModel(Teacher, "userId", id, { university, grad_year });
+        
+        return response.send("updated");
     }
     
     deleteTeacher = async ({ request, response }: HttpContextContract)=>{
         const { id } = request.params()
-        try {
-            const user = await User.find(id)
-            if(!user){
-                return response.status(404).send("id is wrong");
-            }
-            await user?.delete()
-            return response.send("deleted");
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        const user = getModel(User, 'id', id)
+        await deleteModel(User, "id", id);
+        return response.send("deleted");
     }
 }

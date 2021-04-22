@@ -2,164 +2,85 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Classroom from 'App/Models/Classroom';
 import Course from 'App/Models/Course';
 import Lesson from 'App/Models/Lesson';
-
+import ServiceClass from "App/Service/CRUD_Models";
 export default class LessonsController {
-    getClassroomLessons = async({ response, params }: HttpContextContract)=>{
+    Service;
+    constructor(){
+        this.Service = new ServiceClass()
+    }
+    getClassroomLessons = async({ params }: HttpContextContract)=>{
         const { classroomId } = params
-        try {
-            const lessons = await Lesson.query().where('classroom_id', classroomId).preload('classroom')
-            return lessons;
-        } catch (error) {
-            return response.status(500).send({ error: error.message })
-        }
+        const lessons = await Lesson.query().where('classroom_id', classroomId).preload('classroom')
+        return lessons;
     }
 
     getClassroomLesson = async({ response, params }: HttpContextContract)=>{
         const { id } = params;
-        try {
-            const lesson = await Lesson.find(id)
-            if(!lesson){
-                return response.status(404).send("not found")
-            }
-            await lesson.preload('classroom')
-            return lesson
-        } catch (error) {
-            return response.status(500).send({error: error.message});
-        }
+        const lesson = this.Service.getModel(Lesson, "id", id);
+        await lesson.preload("classroom");
+        return response.send(lesson)
     }
 
-    addClassroomLesson = async({ request, response, params }: HttpContextContract)=>{
+    addClassroomLesson = async({ request, params }: HttpContextContract)=>{
         const { classroomId } = params;
-        const { description } = request.requestBody
-        try {
-            const classroom = await Classroom.find(classroomId)
-            if(!classroom){
-                return response.status(404).send("the classroom is wrong")
-            }
-            const lesson = new Lesson()
-            lesson.description = description;
-            await classroom.related("lessons").save(lesson)
-            await lesson.preload("classroom");
-            return lesson
-
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        const { description } = request.input("description");
+        const classroom = this.Service.getModel(Classroom, "id", classroomId);
+        const lesson = this.Service.createModel(Lesson, {description})
+        await classroom.related("lessons").save(lesson)
+        await lesson.preload("classroom");
+        return lesson;
     }
 
     editClassroomLesson = async({ request, response, params }: HttpContextContract)=>{
-        const updates = Object.keys(request.requestBody)
-        const allowedUpdates = ["description"];
-        const isValidOperation = updates.every((update)=> allowedUpdates.includes(update))
-        if(!isValidOperation){
-            return response.status(404).send("invalid operation")
-        }
         const { id } = params
-
-        try {
-            const lesson = await Lesson.find(id)
-            if(!lesson){
-                return response.status(404).send('not found')
-            }
-            updates.forEach((update) => (lesson[update] = request.requestBody[update]));
-            await lesson.save()
-            await lesson.preload('classroom')
-            return lesson
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        const lesson = this.Service.getModel(Lesson, "id", id);
+        this.Service.updateModel(Classroom, "id", id, { ...request.requestBody });
+        await lesson.preload('classroom')
+        return response.send("updated");
     }
 
-    deleteClassroomLesson = async({ request, response }: HttpContextContract)=>{
+    deleteClassroomLesson = async({ request }: HttpContextContract)=>{
         const { id, classroomId } = request.params();
-        try {
-            await Lesson.query().where("classroom_id", classroomId).where("id", id).delete();
-            return;
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        await Lesson.query().where("classroom_id", classroomId).where("id", id).delete();
+        return;
     }
 
     /*
         Courses
     */
-    getCourseLessons = async({ response, params }: HttpContextContract)=>{
-        try {
-            const { courseId } = params
-        try {
-            const lessons = await Lesson.query().where('course_id', courseId).preload('course')
-            return lessons;
-        } catch (error) {
-            return response.status(500).send({ error: error.message })
-        }
-        } catch (error) {
-            return response.status(500).send({ error: error.message })
-        }
+    getCourseLessons = async({ params }: HttpContextContract)=>{
+        const { courseId } = params
+        const lessons = await Lesson.query().where('course_id', courseId).preload('course')
+        return lessons;
     }
 
     getCourseLesson = async({ response, params }: HttpContextContract)=>{
-        const { id } = params;
-        try {
-            const lesson = await Lesson.find(id)
-            if(!lesson){
-                return response.status(404).send("not found")
-            }
-            await lesson.preload('course')
-            return lesson
-        } catch (error) {
-            return response.status(500).send({error: error.message});
-        }
+        const lesson = this.Service.getModel(Lesson, "id", id);
+        await lesson.preload("course");
+        return lesson
     }
 
     addCourseLesson = async({ request, response, params }: HttpContextContract)=>{
         const { courseId } = params;
-        const { description } = request.requestBody
-        try {
-            const course = await Course.find(courseId);
-            if(!course){
-                return response.status(404).send("the course id is wrong")
-            }
-            const lesson = new Lesson()
-            lesson.description = description;
-            await course.related("lessons").save(lesson);
-            await lesson.preload("course");
-            return lesson
-
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        const { description } = request.input("description");
+        const course = this.Service.getModel(Course, "id", courseId);
+        const lesson = this.Service.createModel(Lesson, {description})
+        await course.related("lessons").save(lesson);
+        await lesson.preload("course");
+        return lesson;
     }
 
     editCourseLesson = async({ request, response, params }: HttpContextContract)=>{
-        const updates = Object.keys(request.requestBody)
-        const allowedUpdates = ["description"];
-        const isValidOperation = updates.every((update)=> allowedUpdates.includes(update))
-        if(!isValidOperation){
-            return response.status(404).send("invalid operation")
-        }
         const { id } = params
-
-        try {
-            const lesson = await Lesson.find(id)
-            if(!lesson){
-                return response.status(404).send('not found')
-            }
-            updates.forEach((update) => (lesson[update] = request.requestBody[update]));
-            await lesson.save()
-            await lesson.preload('course')
-            return lesson
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        const lesson = this.Service.getModel(Lesson, "id", id);
+        this.Service.updateModel(Course, "id", id, { ...request.requestBody });
+        await lesson.preload("course");
+        return response.send("updated");
     }
 
     deleteCourseLesson = async({ request, response }: HttpContextContract)=>{
         const { id, courseId } = request.params();
-        try {
-            await Lesson.query().where("course_id", courseId).where("id", id).delete();
-            return "deleted";
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        await Lesson.query().where("course_id", courseId).where("id", id).delete();
+        return "deleted";
     }
 }

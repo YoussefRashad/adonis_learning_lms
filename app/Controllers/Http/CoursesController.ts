@@ -1,87 +1,44 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Course from 'App/Models/Course'
 import Teacher from 'App/Models/Teacher';
-
+import ServiceClass from "App/Service/CRUD_Models";
 export default class CoursesController {
+    Service;
+    constructor(){
+        this.Service = new ServiceClass()
+    }
     getCourses = async({ response }: HttpContextContract)=>{
-        try {
-            const courses = await Course.all()
-            return courses
-        } catch (error) {
-            return response.status(500).send({ error: error.message })
-        }
+        const courses = await Course.all()
+        return courses
     }
 
     getCourse = async({ request, response }: HttpContextContract)=>{
         const { id } = request.params()
-        try {
-            const course = await Course.find(id);
-            if(!course){
-                return response.status(404).send('not found')
-            }
-            return response.send(course);
-        } catch (error) {
-            return response.status(500).send({error: error.message});
-        }
+        const course = this.Service.getModel(Course, "id", id);
+        return response.send(course);
     }
 
     addCourse = async({ request, response, params }: HttpContextContract)=>{
-        const { name, title, needAdmission, level } = request.requestBody;
+        const { name, title, level } = request.requestBody;
         const { teacherId } = params
-        try {
-            const teacher = await Teacher.findBy("user_id", teacherId);
-            if(!teacher){
-                return response.status(404).send("teacher not found")
-            }
-
-            const course = new Course();
-            course.name = name;
-            course.title = title;
-            course.level = level;
-            course.teacherId = teacherId
-            console.log({ name, title, level });
-            
-            await course.save()
-            
-            return response.send(course);
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        const lesson = this.Service.getModel(Teacher, "user_id", teacherId);
+        const course = this.Service.createModel(Course, { name, title, level, teacherId });
+        await course.save();
+        return course;
     }
 
     editCourse = async({ request, response, params }: HttpContextContract)=>{
-        const updates = Object.keys(request.requestBody)
-        const allowedUpdates = ["name", "title", "needAdmission", "level"];
-        const isValidOperation = updates.every((update)=> allowedUpdates.includes(update))
-        if(!isValidOperation){
-            return response.status(404).send("invalid operation")
-        }
         const { id } = params
-
-        try {
-            const course = await Course.find(id);
-            if(!course){
-                return response.status(404).send("id is wrong");
-            }
-            updates.forEach((update)=> course[update] = request.requestBody[update])
-            await course.save()
-            return response.send(course);
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        const course = this.Service.getModel(Course, "id", id);
+        this.Service.updateModel(Course, "id", id, { ...request.requestBody });
+        await course.save();
+        return course;
     }
 
     deleteCourse = async({ request, response }: HttpContextContract)=>{
         const { id } = request.params()
-        try {
-            const course = await Course.find(id);
-            if(!course){
-                return response.status(404).send("id is wrong");
-            }
-            await course?.delete();
-            return response.send("deleted");
-        } catch (error) {
-            return response.status(500).send({ error: error.message });
-        }
+        const user = this.Service.getModel(Course, "id", id);
+        await this.Service.deleteModel(Course, "id", id);
+        return response.send("deleted");
     }
 }
